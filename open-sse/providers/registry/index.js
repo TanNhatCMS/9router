@@ -85,6 +85,7 @@ import p80 from "./searchapi.js";
 import p81 from "./searxng.js";
 import p82 from "./serper.js";
 import p83 from "./siliconflow.js";
+import p139 from "./sensenova.js";
 import p84 from "./stability-ai.js";
 import p85 from "./tavily.js";
 import p86 from "./together.js";
@@ -138,8 +139,13 @@ import p135 from "./minimax-code-global.js";
 import p136 from "./bedrock.js";
 import p137 from "./bedrock-xai.js";
 import p138 from "./nous.js";
-import p139 from "./zcode.js";
-export default [
+import p152 from "./zcode.js";
+import p140 from "./deepseek-web.js";
+import p143 from "./gemini-web.js";
+import p144 from "./muse-web.js";
+import p146 from "./chatgpt-web.js";
+import p147 from "./veoaifree-web.js";
+import p151 from "./uc-web.js";export default [
   p0,
   p1,
   p2,
@@ -226,6 +232,7 @@ export default [
   p81,
   p82,
   p83,
+  p139,
   p84,
   p85,
   p86,
@@ -277,5 +284,11 @@ export default [
   p136,
   p137,
   p138,
-  p139,
+  p152,
+  p140,
+  p143,
+  p144,
+  p146,
+  p147,
+  p151,
 ];
