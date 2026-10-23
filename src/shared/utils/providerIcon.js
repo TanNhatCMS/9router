@@ -16,6 +16,8 @@ const ICON_ALIASES = {
   "muse-web": "muse",
   "gemini-web": "gemini",
   "chatgpt-web": "openai",
+  // ZCode Start Plan serves the GLM models — same brand mark as glm
+  zcode: "glm",
 };
 
 // Runtime only — first 404 remembers id for the whole session
