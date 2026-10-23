@@ -59,8 +59,11 @@ export async function pingModelByKind(model, kind, baseUrl = `http://127.0.0.1:$
   const headers = await getInternalHeaders();
   const start = Date.now();
   // Local bridge providers spawn a runtime per request (~30s), so the generic
-  // 15s probe timeout would abort a healthy call. Give them headroom.
-  const llmTimeoutMs = typeof model === "string" && model.startsWith("zcode/") ? 120_000 : 15_000;
+  // 15s probe timeout would abort a healthy call. Give them headroom: the
+  // zcode stdio bridge for LLM calls, muse-web for image generation.
+  const slowBridge = typeof model === "string" && (model.startsWith("zcode/") || model.startsWith("muse-web/"));
+  const llmTimeoutMs = slowBridge ? 120_000 : 15_000;
+  const imageTimeoutMs = slowBridge ? 180_000 : 15_000;
 
   if (kind === "embedding") {
     const res = await fetch(`${baseUrl}/api/v1/embeddings`, {
@@ -90,7 +93,7 @@ export async function pingModelByKind(model, kind, baseUrl = `http://127.0.0.1:$
       method: "POST",
       headers,
       body: JSON.stringify({ model, prompt: "test" }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(imageTimeoutMs),
     });
     const latencyMs = Date.now() - start;
     const rawText = await res.text().catch(() => "");

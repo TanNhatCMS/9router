@@ -55,9 +55,15 @@ const COOKIE_ATTR_NAMES = new Set([
 /**
  * Parse a raw Cookie header string into [{ name, value }] pairs, skipping
  * cookie attributes (Path, Domain, Expires, ...) that are not pairs.
+ *
+ * Tolerates messy sources: DevTools multi-line copies (newlines become
+ * separators) and an optional "Cookie:" prefix. Values keep their original
+ * characters — the Cookie header for API calls must stay byte-exact.
  */
 export function parseCookiePairs(raw) {
   return String(raw || "")
+    .replace(/\r?\n/g, "; ")
+    .replace(/(^|;\s*)cookie\s*:\s*/gi, "$1")
     .split(";")
     .map((part) => part.trim())
     .filter(Boolean)
@@ -86,18 +92,42 @@ export function missingSessionCookies(pairs) {
   return SESSION_COOKIES.filter((name) => !names.has(name));
 }
 
-/** Playwright addCookies() shape for the .muse.ai domain. */
+/**
+ * Playwright addCookies() shape for the .muse.ai domain.
+ *
+ * Playwright rejects cookies whose value carries control characters or
+ * whitespace (the "Invalid cookie fields" / Storage.setCookies error), so
+ * browser injection only receives clean pairs. Cookies dropped here stay in
+ * the Cookie header for API calls, and the /api/session renewal re-issues a
+ * fresh, well-formed jar anyway.
+ */
 export function toMuseCookies(header) {
-  return parseCookiePairs(header).map(({ name, value }) => ({
-    name,
-    value,
-    domain: ".muse.ai",
-    path: "/",
-    secure: true,
-    httpOnly: false,
-    sameSite: "Lax",
-    expires: -1,
-  }));
+  // Last occurrence wins per name (browser jar semantics) so a messy paste
+  // cannot inject two cookies with the same name + domain + path.
+  const deduped = new Map(
+    parseCookiePairs(header)
+      .filter(({ name, value }) =>
+        /^[\w!#$%&'()*+\-./:<=>?@[\]^`{|}~]+$/.test(name) && /^[\x20-\x7e]*$/.test(value))
+      .map((pair) => [pair.name, pair]),
+  );
+  return [...deduped.values()].map(({ name, value }) => {
+    // __Host- cookies forbid a domain attribute in Chromium's Storage.setCookies —
+    // injecting them with domain: ".muse.ai" fails the whole addCookies batch
+    // ("Invalid cookie fields"). The url form creates a host-locked cookie that
+    // satisfies the prefix rules.
+    if (name.startsWith("__Host-")) {
+      return { name, value, url: `${SITE}/`, secure: true };
+    }
+    return {
+      name,
+      value,
+      domain: ".muse.ai",
+      path: "/",
+      secure: true,
+      httpOnly: false,
+      sameSite: "Lax",
+    };
+  });
 }
 
 function readSetCookies(response) {

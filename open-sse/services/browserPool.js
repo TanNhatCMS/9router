@@ -249,29 +249,48 @@ async function launchBrowser(options) {
   }
 }
 
+// Chromium's Storage.setCookies rejects any cookie whose name is not a valid
+// token or whose value carries control characters / whitespace — a messy
+// captured or pasted header used to kill the whole context creation with
+// "Invalid cookie fields". Filter to browser-safe pairs; last occurrence wins
+// per name so duplicates cannot collide inside one jar. __Host-/__Secure-
+// prefixed cookies are injected in url form: __Host- forbids a domain
+// attribute outright, and a mismatched domain would fail the entire batch.
 function parseCookieString(raw, domain) {
-  return raw
-    .split(";")
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((pair) => {
-      const eq = pair.indexOf("=");
-      if (eq < 0) return null;
-      const name = pair.slice(0, eq).trim();
-      const value = pair.slice(eq + 1).trim();
-      if (!name || !value) return null;
-      return {
-        name,
-        value,
-        domain: domain.startsWith(".") ? domain : `.${domain}`,
-        path: "/",
-        expires: -1,
-        httpOnly: false,
-        secure: true,
-        sameSite: "Lax",
-      };
-    })
-    .filter(Boolean);
+  const token = /^[\w!#$%&'()*+\-./:<=>?@[\]^`{|}~]+$/;
+  // Chromium rejects values with whitespace, quotes, commas or semicolons when
+  // they arrive unquoted — drop those pairs instead of failing the context.
+  const printable = /^[^\s",;=\x00-\x1f\x7f]*$/;
+  const host = domain.replace(/^\./, "");
+  const deduped = new Map(
+    raw
+      .split(";")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((pair) => {
+        const eq = pair.indexOf("=");
+        if (eq < 0) return null;
+        const name = pair.slice(0, eq).trim();
+        const value = pair.slice(eq + 1).trim();
+        if (!name || !value || !token.test(name) || !printable.test(value)) return null;
+        if (name.startsWith("__Host-")) {
+          return { name, value, url: `https://${host}/`, secure: true };
+        }
+        return {
+          name,
+          value,
+          domain: domain.startsWith(".") ? domain : `.${domain}`,
+          path: "/",
+          expires: -1,
+          httpOnly: false,
+          secure: true,
+          sameSite: "Lax",
+        };
+      })
+      .filter(Boolean)
+      .map((cookie) => [cookie.name, cookie]),
+  );
+  return [...deduped.values()];
 }
 
 // Clear a key from the pending-creation map once its promise settles, counting failures.
