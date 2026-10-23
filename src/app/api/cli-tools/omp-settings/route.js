@@ -46,7 +46,7 @@ const readModelsYml = async () => {
 
 const has9RouterInYml = (content) => {
   if (!content) return false;
-  return content.includes("9router:") || content.includes("localhost:20128");
+  return content.includes("9router:") || content.includes("localhost:20228") || content.includes("localhost:20128");
 };
 
 // Build standard 9Router provider block for models.yml

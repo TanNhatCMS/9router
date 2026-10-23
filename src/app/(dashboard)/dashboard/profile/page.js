@@ -27,6 +27,8 @@ export default function ProfilePage() {
   const [isShuttingDown, setIsShuttingDown] = useState(false);
   const [settings, setSettings] = useState({ fallbackStrategy: "fill-first" });
   const [loading, setLoading] = useState(true);
+  const [appPortInput, setAppPortInput] = useState("");
+  const [appPortError, setAppPortError] = useState("");
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
   const [passStatus, setPassStatus] = useState({ type: "", message: "" });
   const [passLoading, setPassLoading] = useState(false);
@@ -328,8 +330,33 @@ export default function ProfilePage() {
     }
   };
 
-  const updateRequireLogin = async (requireLogin) => {
+  const updateAppPort = async (value) => {
+    const portNumber = parseInt(value);
+    if (isNaN(portNumber) || portNumber < 1024 || portNumber > 65535) {
+      setAppPortError("Port must be between 1024 and 65535");
+      return;
+    }
+    setAppPortError("");
     try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appPort: portNumber }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSettings(prev => ({ ...prev, appPort: portNumber }));
+        setAppPortError("Saved — takes effect on the next server start");
+      } else {
+        setAppPortError(data.error || "Failed to save port");
+      }
+    } catch (err) {
+      console.error("Failed to update app port:", err);
+      setAppPortError("Network error");
+    }
+  };
+
+  const updateRequireLogin = async (requireLogin) => {    try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1618,6 +1645,48 @@ export default function ProfilePage() {
               onChange={updateObservabilityEnabled}
               disabled={loading}
             />
+          </div>
+        </Card>
+
+        {/* Server port */}
+        <Card>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 shrink-0">
+              <span className="material-symbols-outlined text-[20px]">settings_ethernet</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold">Server Port</h3>
+          </div>
+          <div className="flex items-start sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm sm:text-base">Listen port</p>
+              <p className="text-xs sm:text-sm text-text-muted">
+                Default 20228. Takes effect on the next server start (launcher
+                reads it automatically; Docker deployments set it via PORT env).
+              </p>
+              {appPortError && (
+                <p className={`text-xs mt-1 ${appPortError.startsWith("Saved") ? "text-green-500" : "text-red-500"}`}>
+                  {appPortError}
+                </p>
+              )}
+            </div>
+            <Input
+              type="number"
+              min="1024"
+              max="65535"
+              placeholder={String(settings.appPort || 20228)}
+              value={appPortInput}
+              onChange={(e) => setAppPortInput(e.target.value)}
+              disabled={loading}
+              className="w-24 sm:w-28 text-center shrink-0"
+            />
+            <Button
+              size="sm"
+              onClick={() => updateAppPort(appPortInput || settings.appPort)}
+              disabled={loading || !appPortInput}
+              className="shrink-0"
+            >
+              Save
+            </Button>
           </div>
         </Card>
 

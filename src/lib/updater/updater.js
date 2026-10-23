@@ -10,7 +10,7 @@ const fs = require("fs");
 const os = require("os");
 
 const packageName = process.env.UPDATER_PKG_NAME || "9router";
-const port = parseInt(process.env.UPDATER_PORT || "20129", 10);
+const port = parseInt(process.env.UPDATER_PORT || "20229", 10);
 const tailLines = parseInt(process.env.UPDATER_TAIL_LINES || "8", 10);
 const maxRetries = parseInt(process.env.UPDATER_RETRIES || "3", 10);
 const retryDelayMs = parseInt(process.env.UPDATER_RETRY_DELAY_MS || "5000", 10);

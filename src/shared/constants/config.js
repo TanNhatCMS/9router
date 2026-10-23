@@ -20,7 +20,7 @@ export const UPDATER_CONFIG = {
   installCmdLatest: "npm i -g 9router@latest --prefer-online",
   shutdownCountdownSec: 3,
   exitDelayMs: 500,
-  statusPort: 20129,
+  statusPort: 20229,
   statusPollIntervalMs: 1000,
   statusLogTailLines: 8,
   installRetries: 3,
@@ -29,7 +29,7 @@ export const UPDATER_CONFIG = {
   waitForExitMinMs: 5000,
   waitForExitMaxMs: 20000,
   waitForExitCheckMs: 500,
-  appPort: 20128,
+  appPort: 20228,
 };
 
 // Theme configuration

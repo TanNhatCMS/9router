@@ -106,8 +106,29 @@ try { ensureTrayRuntime({ silent: true }); } catch {}
 const APP_NAME = pkg.name; // Use from package.json
 const INSTALL_CMD_LATEST = `npm i -g ${APP_NAME}@latest --prefer-online`;
 
-const DEFAULT_PORT = 20128;
+const DEFAULT_PORT = 20228;
 const DEFAULT_HOST = "0.0.0.0";
+
+// The dashboard settings write <DATA_DIR>/port.json ({ "appPort": N }) when the
+// listen port changes. Plain fs read — no sqlite dependency in the launcher.
+// An explicit --port flag still wins.
+function readSavedAppPort() {
+  try {
+    const markerPath = path.join(
+      os.homedir(),
+      process.platform === "win32"
+        ? path.join("AppData", "Roaming", "9router", "port.json")
+        : path.join(".9router", "port.json"),
+    );
+    const portNumber = parseInt(JSON.parse(fs.readFileSync(markerPath, "utf-8")).appPort, 10);
+    if (Number.isInteger(portNumber) && portNumber >= 1024 && portNumber <= 65535) {
+      return portNumber;
+    }
+  } catch {
+    // No marker yet or unreadable file — fall back to the default.
+  }
+  return null;
+}
 
 // First non-internal IPv4 — the address remote peers actually reach when bound to 0.0.0.0.
 function getLanIp() {
@@ -130,15 +151,17 @@ const PROCESS_IDENTIFIERS = [
 ];
 
 // Parse arguments
-let port = DEFAULT_PORT;
+let port = readSavedAppPort() || DEFAULT_PORT;
 let host = DEFAULT_HOST;
 let noBrowser = false;
 let skipUpdate = false;
 let showLog = false;
 let trayMode = false;
+let portExplicit = false;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--port" || args[i] === "-p") {
+    portExplicit = true;
     port = parseInt(args[i + 1], 10) || DEFAULT_PORT;
     i++;
   } else if (args[i] === "--host" || args[i] === "-H") {

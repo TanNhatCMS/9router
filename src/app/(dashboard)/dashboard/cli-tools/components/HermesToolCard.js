@@ -184,7 +184,7 @@ export default function HermesToolCard({
     if (typeof window !== "undefined") {
       return normalizeLocalhost(window.location.origin);
     }
-    return "http://127.0.0.1:20128";
+    return "http://127.0.0.1:20228";
   };
 
   const getEffectiveBaseUrl = () => {

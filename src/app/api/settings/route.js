@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSettings, updateSettings } from "@/lib/localDb";
 import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
 import { resetComboRotation } from "open-sse/services/combo.js";
+import { DATA_DIR } from "@/lib/dataDir";
 import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +77,37 @@ export async function PATCH(request) {
       }
     }
 
+    // Server listen port: validated and mirrored to a marker file the launcher
+    // reads on its next start (the running process keeps its port until then).
+    if (Object.prototype.hasOwnProperty.call(body, "appPort")) {
+      const portNumber = parseInt(body.appPort, 10);
+      if (!Number.isInteger(portNumber) || portNumber < 1024 || portNumber > 65535) {
+        return NextResponse.json(
+          { error: "appPort must be an integer between 1024 and 65535" },
+          { status: 400 },
+        );
+      }
+      body.appPort = portNumber;
+    }
+
     const settings = await updateSettings(body);
+
+    if (Object.prototype.hasOwnProperty.call(body, "appPort")) {
+      try {
+        const fsModule = await import("node:fs");
+        const pathModule = await import("node:path");
+        // Next to the settings db — the launcher reads the same location.
+        const markerPath = pathModule.join(DATA_DIR, "port.json");
+        fsModule.mkdirSync(pathModule.dirname(markerPath), { recursive: true });
+        fsModule.writeFileSync(
+          markerPath,
+          JSON.stringify({ appPort: body.appPort }, null, 2) + "\n",
+          "utf-8",
+        );
+      } catch (markerError) {
+        console.warn("[Settings] Failed to write port marker:", markerError?.message);
+      }
+    }
 
     // Apply outbound proxy settings immediately (no restart required)
     if (
