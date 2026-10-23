@@ -7,7 +7,7 @@ import {
   getProxyPoolById,
 } from "@/models";
 import { APIKEY_PROVIDERS } from "@/shared/constants/config";
-import { AI_PROVIDERS, FREE_TIER_PROVIDERS, WEB_COOKIE_PROVIDERS, isOpenAICompatibleProvider, isAnthropicCompatibleProvider, isCustomEmbeddingProvider } from "@/shared/constants/providers";
+import { AI_PROVIDERS, FREE_TIER_PROVIDERS, FREE_PROVIDERS, WEB_COOKIE_PROVIDERS, isOpenAICompatibleProvider, isAnthropicCompatibleProvider, isCustomEmbeddingProvider } from "@/shared/constants/providers";
 import { normalizeProviderId, normalizeProviderSpecificData } from "@/lib/providerNormalization";
 import { toProviderConnectionResponse } from "@/lib/providerConnectionResponse";
 
@@ -104,6 +104,7 @@ export async function POST(request) {
     const supportsApiKeyMode = !!AI_PROVIDERS[provider]?.authModes?.includes("apikey");
     const isValidProvider = APIKEY_PROVIDERS[provider] ||
       FREE_TIER_PROVIDERS[provider] ||
+      FREE_PROVIDERS[provider] ||
       supportsApiKeyMode ||
       isWebCookieProvider ||
       isOpenAICompatibleProvider(provider) ||
@@ -118,7 +119,10 @@ export async function POST(request) {
     // key to paste. Without this, following such a provider's own setup notice returns 400.
     const apiKeySubstitute = AI_PROVIDERS[provider]?.apiKeyOptionalWith;
     const hasApiKeySubstitute = !!(apiKeySubstitute && body.providerSpecificData?.[apiKeySubstitute]);
-    if (!apiKey && provider !== "ollama-local" && !hasApiKeySubstitute) {
+    // Keyless local providers: ollama-local reads the local daemon, zcode reads
+    // the shared ZCode profile on this machine — neither has a key to paste.
+    const keylessProvider = provider === "ollama-local" || provider === "zcode";
+    if (!apiKey && !keylessProvider && !hasApiKeySubstitute) {
       return NextResponse.json({ error: `${isWebCookieProvider ? "Cookie value" : "API Key"} is required` }, { status: 400 });
     }
     const connectionName = name || displayName || AI_PROVIDERS[provider]?.name;

@@ -23,6 +23,7 @@ import { getXiaomiMimoUsage } from "./usage/xiaomi-mimo.js";
 import { getCursorUsage } from "./usage/cursor.js";
 import { resolveQoderCredentials } from "./qoderModels.js";
 import { getGlmUsage } from "./usage/glm.js";
+import { getZcodeUsage } from "./usage/zcode.js";
 import { getCommandCodeUsage } from "./usage/commandcode.js";
 import {
   getIflowUsage,
@@ -51,6 +52,8 @@ const USAGE_HANDLERS = {
   // OAuth connections store the coding-plan key on accessToken (no apiKey)
   glm: (c) => getGlmUsage(c.apiKey || c.accessToken, c.provider, c.proxyOptions),
   "glm-cn": (c) => getGlmUsage(c.apiKey || c.accessToken, c.provider, c.proxyOptions),
+  // ZCode Start Plan reads the shared local ZCode profile JWT (noAuth provider)
+  zcode: (c) => getZcodeUsage(c),
   minimax: (c) => getMiniMaxUsage(c.apiKey, c.provider, c.proxyOptions),
   "minimax-cn": (c) => getMiniMaxUsage(c.apiKey, c.provider, c.proxyOptions),
   // MiniMax Code (mcode) credits lane — signed account API + plan windows

@@ -29,8 +29,10 @@ import WindsurfExecutor from "./windsurf.js";
 import { DefaultExecutor } from "./default.js";
 import { MinimaxCodeExecutor } from "./minimax-code.js";
 import { DevinCliExecutor } from "./devin-cli.js";
+import { ZcodeExecutor } from "./zcode.js";
 
 const executors = {
+  zcode: new ZcodeExecutor(),
   antigravity: new AntigravityExecutor(),
   azure: new AzureExecutor(),
   "gemini-cli": new GeminiCLIExecutor(),
@@ -119,3 +121,4 @@ export { default as TraeExecutor } from "./trae.js";
 export { default as ZedExecutor } from "./zed.js";
 export { default as WindsurfExecutor } from "./windsurf.js";
 export { DevinCliExecutor } from "./devin-cli.js";
+export { ZcodeExecutor } from "./zcode.js";
