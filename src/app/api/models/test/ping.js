@@ -58,6 +58,9 @@ async function getInternalHeaders() {
 export async function pingModelByKind(model, kind, baseUrl = `http://127.0.0.1:${process.env.PORT || UPDATER_CONFIG.appPort}`) {
   const headers = await getInternalHeaders();
   const start = Date.now();
+  // Local bridge providers spawn a runtime per request (~30s), so the generic
+  // 15s probe timeout would abort a healthy call. Give them headroom.
+  const llmTimeoutMs = typeof model === "string" && model.startsWith("zcode/") ? 120_000 : 15_000;
 
   if (kind === "embedding") {
     const res = await fetch(`${baseUrl}/api/v1/embeddings`, {
@@ -178,7 +181,7 @@ export async function pingModelByKind(model, kind, baseUrl = `http://127.0.0.1:$
       stream: false,
       messages: [{ role: "user", content: "hi" }],
     }),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(llmTimeoutMs),
   });
   const latencyMs = Date.now() - start;
 

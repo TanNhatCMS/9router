@@ -1520,7 +1520,16 @@ export default function ProviderDetailPage() {
       )}
 
       {/* Connections */}
-      {isFreeNoAuth ? (
+      {isFreeNoAuth && providerId === "zcode" ? (
+        <Card>
+          <h2 className="mb-2 text-lg font-semibold">Local runtime</h2>
+          <p className="text-sm text-muted-foreground">
+            Requests run through the locally installed, logged-in ZCode app over its
+            native stdio protocol — no proxy pools or connections needed. Start Plan
+            quota is visible under <span className="font-medium">Usage → Quota</span>.
+          </p>
+        </Card>
+      ) : isFreeNoAuth ? (
         <NoAuthProxyCard providerId={providerId} />
       ) : (
         <Card>
