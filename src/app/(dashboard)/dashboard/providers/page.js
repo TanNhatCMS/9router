@@ -369,11 +369,12 @@ export default function ProvidersPage() {
 
   // Web Cookie: providers authenticated by a pasted browser/session cookie
   // (connections are stored with authType "cookie" — see POST /api/providers).
+  // No serviceKinds filter: image/video-only web providers (muse-web,
+  // gemini-web, …) surface here too, in their own "Web Providers" group.
   const webCookieEntries = Object.entries(WEB_COOKIE_PROVIDERS)
     .filter(
       ([key, info]) =>
         !info.hidden &&
-        (info.serviceKinds ?? ["llm"]).includes("llm") &&
         matchSearch(info.name) &&
         matchStatus(getProviderStats(key, "cookie"), info.noAuth),
     )
@@ -481,6 +482,27 @@ export default function ProvidersPage() {
           </div>
         )}
       </div>
+
+      {/* Web Providers — browser-cookie sessions, incl. media-only ones */}
+      {webCookieEntries.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2 leading-tight">
+            Web Providers
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {webCookieEntries.map(([key, info]) => (
+              <ApiKeyProviderCard
+                key={key}
+                providerId={key}
+                provider={info}
+                stats={getProviderStats(key, "cookie")}
+                authType="cookie"
+                onToggle={(active) => handleToggleProvider(key, "cookie", active)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* OAuth Providers */}
       {oauthEntries.length > 0 && (
@@ -625,16 +647,6 @@ export default function ProvidersPage() {
               stats={getProviderStats(key, "apikey")}
               authType="apikey"
               onToggle={(active) => handleToggleProvider(key, "apikey", active)}
-            />
-          ))}
-          {webCookieEntries.map(([key, info]) => (
-            <ApiKeyProviderCard
-              key={key}
-              providerId={key}
-              provider={info}
-              stats={getProviderStats(key, "cookie")}
-              authType="cookie"
-              onToggle={(active) => handleToggleProvider(key, "cookie", active)}
             />
           ))}
         </div>
